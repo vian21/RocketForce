@@ -6,6 +6,7 @@ Rocket simulator
 ## Project purpose
 ### Phase 1
 - Rocket sprite
+- ![alt tag](https://images.app.goo.gl/dM2s86xbAF12zEZU7)
 - Spacebar to launch
 - goes straight up
 
