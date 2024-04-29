@@ -4,7 +4,7 @@ Rocket simulator
 ## Installation
 
 ## Project purpose
-### Phase
+### Phase 1
 - Rocket sprite
 - Spacebar to launch
 - goes straight up
@@ -15,7 +15,7 @@ Rocket simulator
 - Air resitance
 - Yaw and Rotation
 
-## Phase
+## Phase 3
 - change background once in space
 - Return to earth automatically
 
