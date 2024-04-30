@@ -7,12 +7,13 @@
 IMGUI_DIR = imgui
 SOURCES = src/main.cpp
 SOURCES += $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_demo.cpp $(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_tables.cpp $(IMGUI_DIR)/imgui_widgets.cpp
+SOURCES += $(IMGUI_DIR)/backends/imgui_impl_sdl2.cpp $(IMGUI_DIR)/backends/imgui_impl_sdlrenderer2.cpp
 
 # Compiler options
 CXX := clang++
-CXXFLAGS += -std=c++11 -I$(IMGUI_DIR)
+CXXFLAGS += -std=c++11 -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends
 CXXFLAGS += -g -Wall -Wformat
-LIBS =
+LIBS = 
 
 # Target executable
 OUTPUT_DIR := bin
@@ -37,9 +38,10 @@ endif
 
 ifeq ($(UNAME_S), Darwin) #APPLE
 	ECHO_MESSAGE = "Mac OS X"
-	ifeq ($(WITH_EXTRA_WARNINGS), 1)
-		CXXFLAGS += -Weverything -Wno-reserved-id-macro -Wno-c++98-compat-pedantic -Wno-padded -Wno-poison-system-directories
-	endif
+	LIBS += -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo `sdl2-config --libs`
+
+	CXXFLAGS += `sdl2-config --cflags`
+	CXXFLAGS += -I/usr/local/include -I/opt/local/include
 	CFLAGS = $(CXXFLAGS)
 endif
 
@@ -69,7 +71,7 @@ $(OUTPUT_DIR)/%.o:$(IMGUI_DIR)/misc/freetype/%.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 all: $(TARGET_BIN)
-	@echo Build complete for $(ECHO_MESSAGE)
+	@echo "✅ Build complete for $(ECHO_MESSAGE)"
 
 $(TARGET_BIN): $(OBJS)
 	$(CXX) -o $@ $^ $(CXXFLAGS) $(LIBS)
