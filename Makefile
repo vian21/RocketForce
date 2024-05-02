@@ -20,6 +20,9 @@ OUTPUT_DIR := bin
 OBJS = $(addprefix $(OUTPUT_DIR)/, $(addsuffix .o, $(basename $(notdir $(SOURCES)))))
 TARGET_BIN = $(OUTPUT_DIR)/simulate
 
+# Ensure $(OUTPUT_DIR) exists
+$(shell mkdir -p $(OUTPUT_DIR))
+
 ##---------------------------------------------------------------------
 ## BUILD FLAGS PER PLATFORM
 ##---------------------------------------------------------------------
@@ -80,4 +83,4 @@ run: $(TARGET_BIN)
 	./$^
 
 clean:
-	rm -f $(EXE) $(OBJS)
+	rm -rf $(OUTPUT_DIR)
