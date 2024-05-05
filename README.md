@@ -34,7 +34,6 @@ make run
 
 - [x] Project setup (installation and compilation)
 - [x] Rocket sprite
-- ![alt tag](https://www.google.ci/url?sa=i&url=https%3A%2F%2Fwww.deviantart.com%2Fgogoat1%2Fart%2FSpaceship-spritesheet-956556333&psig=AOvVaw0WJiXTzZOQZOniqm77Umbx&ust=1714520097173000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCLiShp3L6IUDFQAAAAAdAAAAABAE)
 - [ ] Spacebar to launch
 - [ ] goes straight up
 

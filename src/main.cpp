@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <SDL.h>
 
+/* https://github.com/Polytonic/Glitter/issues/70#issuecomment-766281506 */
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
@@ -8,6 +12,42 @@
 #if !SDL_VERSION_ATLEAST(2, 0, 17)
 #error This backend requires SDL 2.0.17+ because of SDL_RenderGeometry() function
 #endif
+
+int rocketState = 0;
+
+bool LoadTextureFromFile(const char* filename, SDL_Texture** texture_ptr, int& width, int& height, SDL_Renderer* renderer) {
+    int channels;
+    unsigned char* data = stbi_load(filename, &width, &height, &channels, 0);
+
+    if (data == nullptr) {
+        fprintf(stderr, "Failed to load image: %s\n", stbi_failure_reason());
+        return false;
+    }
+
+    SDL_Surface* surface = SDL_CreateRGBSurfaceFrom((void*)data, width, height, channels * 8, channels * width,
+                                                    0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
+
+    if (surface == nullptr) {
+        fprintf(stderr, "Failed to create SDL surface: %s\n", SDL_GetError());
+        return false;
+    }
+
+    *texture_ptr = SDL_CreateTextureFromSurface(renderer, surface);
+
+    if ((*texture_ptr) == nullptr) {
+        fprintf(stderr, "Failed to create SDL texture: %s\n", SDL_GetError());
+    }
+
+    SDL_FreeSurface(surface);
+    stbi_image_free(data);
+
+    return true;
+}
+
+Uint32 updateRocket(Uint32 interval, void *param) {
+    rocketState = (rocketState % 4) + 1;
+    return interval;
+}
 
 int main(int, char **)
 {
@@ -42,34 +82,25 @@ int main(int, char **)
     /**** IMGUI setup ****/
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO &io = ImGui::GetIO();
-    (void)io;
+    ImGuiIO &io = ImGui::GetIO(); //get keyboard events and frame rates
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
-    // ImGui::StyleColorsLight();
+    //ImGui::StyleColorsLight();
 
     // Setup Platform/Renderer backends
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer2_Init(renderer);
 
-    // Our state
-    bool show_demo_window = true;
-    bool show_another_window = false;
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    SDL_TimerID timerID = SDL_AddTimer(1500, updateRocket, NULL);
 
     // Main loop
     bool done = false;
     while (!done)
     {
-        // Poll and handle events (inputs, window resize, etc.)
-        // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
-        // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
-        // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
-        // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
         SDL_Event event;
+        // read keyboard events e.g spacebar, cmd+Q, quit
         while (SDL_PollEvent(&event))
         {
             ImGui_ImplSDL2_ProcessEvent(&event);
@@ -84,47 +115,37 @@ int main(int, char **)
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        if (show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
+        //Add the image
+        SDL_Texture* my_texture;
+        int my_image_width, my_image_height;
+        bool ret = LoadTextureFromFile("assets/Rocket.png", &my_texture, my_image_width, my_image_height, renderer);
+        (void)ret;
 
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
-        {
-            static float f = 0.0f;
-            static int counter = 0;
-
-            ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!" and append into it.
-
-            ImGui::Text("This is some useful text.");          // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window); // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
-
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);             // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float *)&clear_color); // Edit 3 floats representing a color
-
-            if (ImGui::Button("Button")) // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-            ImGui::End();
-        }
-
-        // 3. Show another simple window.
-        if (show_another_window)
-        {
-            ImGui::Begin("Another Window", &show_another_window); // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another window!");
-            if (ImGui::Button("Close Me"))
-                show_another_window = false;
-            ImGui::End();
-        }
+        /* Display image with IMGUI 
+         * https://github.com/ocornut/imgui/issues/1635
+         */
+        ImGui::Begin("Rocket sprite on screen", NULL,
+                    ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
+                    ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize |
+                    ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("pointer = %p", my_texture);
+        ImGui::Text("size = %d x %d", my_image_width, my_image_height);
+ 
+        /* Image splitting: https://github.com/ocornut/imgui/issues/675 */
+        ImGui::Image((void*) my_texture, 
+                    ImVec2(my_image_width, my_image_height),
+                    ImVec2(0.0f + 0.25f * (rocketState - 1), 0.0f + 0.25f * (rocketState - 1)),
+                    ImVec2(0.25f * rocketState, 0.25f * rocketState));
+        printf ("(%f, %f), (%f, %f)\n",
+                (0.0f + 0.25f * (rocketState - 1)),
+                (0.0f + 0.25f * (rocketState - 1)),
+                0.25f * rocketState,
+                0.25f * rocketState);
+        ImGui::End();
 
         // Rendering
         ImGui::Render();
         SDL_RenderSetScale(renderer, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
-        SDL_SetRenderDrawColor(renderer, (Uint8)(clear_color.x * 255), (Uint8)(clear_color.y * 255), (Uint8)(clear_color.z * 255), (Uint8)(clear_color.w * 255));
         SDL_RenderClear(renderer);
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
         SDL_RenderPresent(renderer);
@@ -137,6 +158,8 @@ int main(int, char **)
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    SDL_RemoveTimer(timerID);
+
     SDL_Quit();
 
     return 0;
