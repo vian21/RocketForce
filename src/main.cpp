@@ -14,6 +14,10 @@
 #endif
 
 int rocketState = 0;
+bool isMoving = false; // tracking if the rocket is moving 
+float pos = 720.0f; // initial position of the rocket at the bottom of the screen
+float speed = -200.0f; // move speed of the rocket
+Uint32 lastTime = 0;
 
 bool LoadTextureFromFile(const char* filename, SDL_Texture** texture_ptr, int& width, int& height, SDL_Renderer* renderer) {
     int channels;
@@ -108,6 +112,24 @@ int main(int, char **)
                 done = true;
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
                 done = true;
+            if (event.type == SDL_KEYDOWN && event.key.keysym.sym ==SDLK_SPACE )
+                isMoving = true;
+        }
+
+        //Calculate time elapsed
+        Uint32 currentTime = SDL_GetTicks(); //Returns elapsed time in milliseconds
+        float deltaTime = (currentTime - lastTime)/1000.0f; // calculate deltaTime and converting in seconds
+        lastTime = currentTime;
+
+        //Update rocket position 
+        if (isMoving){
+            pos += speed * deltaTime;
+            if (pos < 0){
+                // reset the rocket position when reaching the top
+                pos = 720.0f;
+                isMoving = false;
+
+            }
         }
 
         // Start the Dear ImGui frame
@@ -130,6 +152,8 @@ int main(int, char **)
                     ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("pointer = %p", my_texture);
         ImGui::Text("size = %d x %d", my_image_width, my_image_height);
+        ImVec2 position = ImVec2(640.0f - my_image_width / 2, pos - my_image_height / 2);  // centré rocket
+        ImGui::SetCursorPos(position);
  
         /* Image splitting: https://github.com/ocornut/imgui/issues/675 */
         ImGui::Image((void*) my_texture, 
